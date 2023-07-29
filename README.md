@@ -180,4 +180,146 @@ Install Apache and copy index.html
   - name: Restart Apache RedHat
     service: name=httpd statr=restarted
 ```
+**Циклы – Loop, With_Items, Until, With_fileglob**
+```yml
+---
+- name: Loops Playbook
+  hosts: all
+  become: yes
 
+  tasks:
+  - name : Say Hello to All
+    debug: msg="Hello {{ item }}"
+    loop: # - в старых версиях with_items
+      - "Vasya"
+      - "Mascha"
+      - "Igor"
+  - name: Loop Until example
+    shell: echo -n Z >> myfile.txt && cat myfile.txt
+    register: output # - сохраняем вывод
+    delay: 2 # - делаем переры 2 сек между попытками
+    retries: 10 # -количество попыток - по умолчанию 3
+    until: output.stdout.find("ZZZZ") == false  # - делаем пока не получим ZZZZ
+
+  - name: Print Output
+    debug:
+      var: output.stdout # - печатаем output
+
+  - name: Install many package # - ставим много пакетов
+    apt: name={{ item }} state=latest
+    loop:
+      - mc
+      - tree
+      - sysstat
+```
+```
+---yml
+- name: Install Apache and Upload my Web Page
+  hosts: all
+  become: yes
+
+  vars:
+    source_folder: ./mysite
+    destin_folder: /var/www/html
+
+  tasks:
+  - name: Check and Print Linux-Family
+    debug: var=ansible_os_family
+
+  - block: # for Debian
+
+    - name: Install Apache Web Server for Debian
+      apt: name=apache2 state=latest
+    - name: Start WebServer and make it enable for Debian
+      service: name=apache2 state=started enabled=yes
+    when: ansible_os_family == "Debian"
+
+  - block: # for RedHat
+
+    - name: Install Apache Web Server for RedHat
+      yum: name=httpd state=latest
+    - name: Start WebServer and make it enable for RedHat
+      service: name=httpd state=started enabled=yes
+    when: ansible_os_family == "RedHat"
+
+  - name: Copy MyPage to Servers
+#    copy: src={{ source_folder }}/{{ item }} dest={{ destin_folder }} mode=0555 - первый вариант копирования пофайлово
+#    loop:
+#      - "index.html"
+#      - "1.jpg"
+#      - "2.jpg"
+    copy: src={{ item }} dest={{ destin_folder }} mode=0555 # - второй вариант копирования - вся папка
+    with_fileglob: "{{ source_folder }}/*.*"
+    notify:
+      - Restart Apache RedHat
+      - Restart Apache Debian
+
+  handlers:
+  - name: Restart Apache Debian
+    service: name=apache2 state=restarted
+    when: ansible_os_family == "Debian"
+
+  - name: Restart Apache RedHat
+    service: name=httpd statr=restarted
+    when: ansible_os_family == "RedHat"
+```
+**Шаблоны - Jinja Template**
+```yml
+---
+- name: Install Apache and Upload my Web Page
+  hosts: all
+  become: yes
+
+  vars:
+    source_folder: ./website2
+    destin_folder: /var/www/html
+
+  tasks:
+  - name: Check and Print Linux-Family
+    debug: var=ansible_os_family
+
+  - block: # for Debian
+
+    - name: Install Apache Web Server for Debian
+      apt: name=apache2 state=latest
+    - name: Start WebServer and make it enable for Debian
+      service: name=apache2 state=started enabled=yes
+    when: ansible_os_family == "Debian"
+
+  - name: Generate INDEX.HTML file
+    template: src={{ source_folder }}/index.j2 dest={{ destin_folder }}/index.html mode=0555
+    notify:
+      - Restart Apache Debian
+
+  handlers:
+  - name: Restart Apache Debian
+    service: name=apache2 state=restarted
+```
+```html
+<HTML>
+
+<HEAD>
+
+<TITLE>ADV-IT</TITLE>
+
+<BODY bgcolor="black" onLoad=Elastic()>
+<CENTER>
+
+<br><br><br><br>
+
+<br><br><br><br>
+
+<font color="green"><h2>Owner of this Server is: {{ owner }}</h2>
+
+<font color="green"><h2>This Page was created with</h2>
+
+<font color="gold"><H1 ID="elastic" ALIGN="Center">ANSIBLE-BLA-BLA</H1>
+
+<font color="gold"><H1 ID="elastic" ALIGN="Center">Server Host Name : {{ ansible_hostname }}</H1>
+<font color="gold"><H1 ID="elastic" ALIGN="Center">Server OS Family : {{ ansible_os_family }}</H1>
+<font color="gold"><H1 ID="elastic" ALIGN="Center">IP Adress : {{ ansible_default_ipv4.address }}</H1>
+
+</body>
+</HTML>
+
+```
