@@ -212,8 +212,8 @@ Install Apache and copy index.html
       - tree
       - sysstat
 ```
-```
----yml
+```yml
+---
 - name: Install Apache and Upload my Web Page
   hosts: all
   become: yes
@@ -297,29 +297,20 @@ Install Apache and copy index.html
 ```
 ```html
 <HTML>
-
 <HEAD>
-
 <TITLE>ADV-IT</TITLE>
-
 <BODY bgcolor="black" onLoad=Elastic()>
 <CENTER>
-
 <br><br><br><br>
-
 <br><br><br><br>
 
 <font color="green"><h2>Owner of this Server is: {{ owner }}</h2>
-
 <font color="green"><h2>This Page was created with</h2>
-
 <font color="gold"><H1 ID="elastic" ALIGN="Center">ANSIBLE-BLA-BLA</H1>
 
 <font color="gold"><H1 ID="elastic" ALIGN="Center">Server Host Name : {{ ansible_hostname }}</H1>
 <font color="gold"><H1 ID="elastic" ALIGN="Center">Server OS Family : {{ ansible_os_family }}</H1>
 <font color="gold"><H1 ID="elastic" ALIGN="Center">IP Adress : {{ ansible_default_ipv4.address }}</H1>
-
 </body>
 </HTML>
-
 ```
