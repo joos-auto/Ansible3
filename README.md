@@ -49,7 +49,7 @@ file
 https://www.ansiblepilot.com/articles/ansible-troubleshooting-missing-sudo-password/
 ```
 visudo
-joos joos    ALL=(ALL) NOPASSWD: ALL
+joos  ALL=(ALL) NOPASSWD: ALL
 
 sudo nano /etc/sudoers.d/joos
 joos ALL=(ALL) NOPASSWD: ALL
@@ -138,4 +138,46 @@ Install Apache and copy index.html
 ```
 **Блоки и Условия – Block-When**
 
+Переносим для разных систем в разные блоки и делаем общую команду when: ansible_os_family ==
+```yml
+---
+- name: Install Apache and Upload my Web Page
+  hosts: all
+  become: yes
+
+  vars:
+    source_file: ./index.html
+    destin_file: /var/www/html
+
+  tasks:
+  - name: Check and Print Linux-Family
+    debug: var=ansible_os_family
+
+  - block: # for Debian
+    - name: Install Apache Web Server for Debian
+      apt: name=apache2 state=latest
+    - name: Copy MyPage to Servers
+      copy: src={{ source_file }} dest={{ destin_file }} mode=0555
+      notify: Restart Apache Debian
+    - name: Start WebServer and make it enable for Debian
+      service: name=apache2 state=started enabled=yes
+    when: ansible_os_family == "Debian"
+
+  - block: # for RedHat
+    - name: Install Apache Web Server for RedHat
+      yum: name=httpd state=latest
+    - name: Copy MyPage to Servers
+      copy: src={{ source_file }} dest={{ destin_file }} mode=0555
+      notify: Restart Apache RedHat
+    - name: Start WebServer and make it enable for RedHat
+      service: name=httpd state=started enabled=yes
+    when: ansible_os_family == "RedHat"
+
+  handlers:
+  - name: Restart Apache Debian
+    service: name=apache2 state=restarted
+
+  - name: Restart Apache RedHat
+    service: name=httpd statr=restarted
+```
 
